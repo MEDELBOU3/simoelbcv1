@@ -12,6 +12,7 @@
 body {
     font-family: 'Montserrat', 'Raleway', 'Oswald', 'Roboto Slab', 'Playfair Display', sans-serif;
     height: 100%;
+    width: 100%;
     line-height: 1.6; 
     margin: 0; 
     min-height: 100vh;
