@@ -125,7 +125,7 @@ main{
 } 
 .gif-container{
     position: relative;
-     top: -37.5%;
+     top: -37.0%;
 } 
 .gif-container img{
     width: 700px;
@@ -829,7 +829,7 @@ main{
     max-width: 780px;
     width: calc(100% - 100px);
     height: 400px;
-    margin-top: -1790px;
+    margin-top: -1880px;
     margin-left: 700px;
     z-index: 1;
 }
