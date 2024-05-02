@@ -115,8 +115,14 @@ main{
     text-align: center;
     font-size: 30px;
     color: rgb(49, 49, 49);
+    background-color: #000000;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgb(255, 255, 255);
 } 
-
+.git p a i:hover{
+   background-color:  #ffb963;
+    
+} 
 .gif-container{
     position: relative;
      top: -37.5%;
@@ -359,9 +365,17 @@ main{
 .sociale a i {
     align-items: center;
     margin-left: 25px;
+    backgound-color: #000000;
+    border-radius: 50%;
+    box-shadow: 0 0 10ps rgb(255, 255, 255);
     font-size: 35px;
     color: rgb(49, 49, 49);
 } 
+
+.sociale a i:hover {
+    backgound-color: #ffb963;
+} 
+
 .personnel {
     background: linear-gradient(130deg, #475C7A 0%, #685D79 25%, #AB6C82 50%, #D8737F 100%);
     padding: 30px;
@@ -527,9 +541,13 @@ main{
 .projects i{ 
     color: rgb(59, 59, 59);  
     font-size: 30px;
+    background-color: #000000;
+    border-radius: 50%;
     margin-left: 5px; 
 }
-
+.projects i:hover{ 
+    background-color: #ffb963;
+}
 .projects p{ 
     font-size: 22px;
     color: #000;
@@ -558,13 +576,18 @@ main{
 .canva  i{ 
     font-size: 30px;
     color: rgb(59, 59, 59);
+    background-color: #000000;
+    border-radius: 50%;
     margin-top: 10px;
     margin-left: 5px;
     font-family: sans-serif;
     z-index: -1;
     
 }
-
+.canva  i:hover{ 
+    background-color: #ffb963 ;
+    
+}
 .skills h1 { 
     font-size: 45px;
     color: #fff;
