@@ -57,7 +57,7 @@ main{
 .container {
    background: linear-gradient(145deg, #475C7A 0%, #685D79 25%, #AB6C82 50%, #D8737F 100%);
    width: 300px;
-   height: 2190px;
+   height: 2220px;
    padding: 30px;
    z-index: 1;
  
@@ -373,13 +373,13 @@ main{
 } 
 
 .sociale a i:hover{
-    backgound-color: #ffb963;
+    background-color: #ffb963;
 } 
 
 .personnel {
     background: linear-gradient(130deg, #475C7A 0%, #685D79 25%, #AB6C82 50%, #D8737F 100%);
     padding: 30px;
-    margin-top: -2250px;
+    margin-top: -2280px;
     width: 110%;
     height: auto;
     box-sizing: border-box;
@@ -430,7 +430,7 @@ main{
 } 
 .content{ 
     background: linear-gradient(to bottom right, #AB6C82 0%, #D8737F 50%, #ffb963 100%);
-    height:  111vw;
+    height:  112.8vw;
     width: 100%;
     margin-left: 349px;
     z-index: 0;
