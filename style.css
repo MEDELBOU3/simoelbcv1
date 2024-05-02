@@ -367,12 +367,12 @@ main{
     margin-left: 25px;
     backgound-color: #000000;
     border-radius: 50%;
-    box-shadow: 0 0 10ps rgb(255, 255, 255);
+    box-shadow: 0 0 10px rgb(255, 255, 255);
     font-size: 35px;
     color: rgb(49, 49, 49);
 } 
 
-.sociale a i:hover {
+.sociale a i:hover{
     backgound-color: #ffb963;
 } 
 
