@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1981,216 +1981,229 @@
             let scrollPosition = window.pageYOffset;
             parallaxBg.style.transform = `translateY(${scrollPosition * 0.5}px)`;
         });
-    
 
-        //Dashbord Elements
-        let files = JSON.parse(localStorage.getItem('files')) || [];
+        //Dashbord elements
+        let files = [];
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.querySelector(`.tab:nth-child(${tabName === 'upload' ? 1 : tabName === 'manage' ? 2 : 3})`).classList.add('active');
-            document.getElementById(`${tabName}Tab`).classList.add('active');
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector(`.tab:nth-child(${tabName === 'upload' ? 1 : tabName === 'manage' ? 2 : 3})`).classList.add('active');
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+}
+
+function updateFileName() {
+    const fileInput = document.getElementById('fileInput');
+    const selectedFileName = document.getElementById('selectedFileName');
+    if (fileInput.files.length > 0) {
+        selectedFileName.textContent = `Ausgewählte Datei: ${fileInput.files[0].name}`;
+    } else {
+        selectedFileName.textContent = '';
+    }
+}
+
+function validateEmail(email) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
+
+function uploadFile() {
+    const fileInput = document.getElementById('fileInput');
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const secretCode = document.getElementById('secretCode').value.trim();
+
+    // Reset error messages
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+
+    let hasError = false;
+
+    if (!fileInput.files[0]) {
+        document.getElementById('selectedFileName').textContent = 'Bitte wählen Sie eine Datei aus.';
+        hasError = true;
+    }
+    if (!username) {
+        document.getElementById('usernameError').textContent = 'Benutzername ist erforderlich.';
+        hasError = true;
+    }
+    if (!email || !validateEmail(email)) {
+        document.getElementById('emailError').textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+        hasError = true;
+    }
+    if (!secretCode) {
+        document.getElementById('secretCodeError').textContent = 'Geheimcode ist erforderlich.';
+        hasError = true;
+    }
+
+    if (hasError) return;
+
+    const file = fileInput.files[0];
+    if (file.size > 100 * 1024 * 1024) {
+        alert('Die Dateigröße überschreitet 100 MB');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('username', username);
+    formData.append('email', email);
+    formData.append('secretCode', secretCode);
+
+    // Send file to server
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Datei erfolgreich hochgeladen');
+        clearInputs();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Fehler beim Hochladen der Datei');
+    });
+}
+
+function clearInputs() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('username').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('secretCode').value = '';
+    document.getElementById('selectedFileName').textContent = '';
+}
+
+function showUserFiles() {
+    const username = document.getElementById('manageUsername').value;
+    const secretCode = document.getElementById('manageSecretCode').value;
+    const userFileList = document.getElementById('userFileList');
+    userFileList.innerHTML = '';
+
+    // Fetch user files from server
+    fetch(`/files?username=${encodeURIComponent(username)}&secretCode=${encodeURIComponent(secretCode)}`)
+    .then(response => response.json())
+    .then(data => {
+        files = data;
+        if (files.length === 0) {
+            userFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
+            return;
         }
 
-        function updateFileName() {
-            const fileInput = document.getElementById('fileInput');
-            const selectedFileName = document.getElementById('selectedFileName');
-            if (fileInput.files.length > 0) {
-                selectedFileName.textContent = `Ausgewählte Datei: ${fileInput.files[0].name}`;
-            } else {
-                selectedFileName.textContent = '';
-            }
+        files.forEach(file => {
+            const fileItem = createFileItem(file, true);
+            userFileList.appendChild(fileItem);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        userFileList.innerHTML = '<p>Fehler beim Abrufen der Dateien.</p>';
+    });
+}
+
+function showAdminFiles() {
+    const adminCode = document.getElementById('adminCode').value;
+    const adminFileList = document.getElementById('adminFileList');
+    adminFileList.innerHTML = '';
+
+    // Fetch all files from server (admin view)
+    fetch(`/admin/files?adminCode=${encodeURIComponent(adminCode)}`)
+    .then(response => response.json())
+    .then(data => {
+        files = data;
+        if (files.length === 0) {
+            adminFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
+            return;
         }
 
-        function validateEmail(email) {
-            const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-            return re.test(String(email).toLowerCase());
-        }
+        files.forEach(file => {
+            const fileItem = createFileItem(file, false);
+            adminFileList.appendChild(fileItem);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        adminFileList.innerHTML = '<p>Fehler beim Abrufen der Dateien oder falscher Admin-Code.</p>';
+    });
+}
 
-        function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const username = document.getElementById('username').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const secretCode = document.getElementById('secretCode').value.trim();
+function createFileItem(file, isUserView) {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+    fileItem.innerHTML = `
+        <h3>${file.name}</h3>
+        <p><strong>Größe:</strong> ${formatFileSize(file.size)}</p>
+        <p><strong>Typ:</strong> ${file.type}</p>
+        ${isUserView ? '' : `
+            <p><strong>Benutzername:</strong> ${file.username}</p>
+            <p><strong>E-Mail:</strong> ${file.email}</p>
+        `}
+        <div class="file-actions">
+            <button onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Herunterladen</button>
+            ${isUserView ? `
+                <button onclick="deleteFile('${file.id}')"><i class="fas fa-trash"></i> Löschen</button>
+                <button onclick="replaceFile('${file.id}')"><i class="fas fa-exchange-alt"></i> Ersetzen</button>
+            ` : ''}
+        </div>
+    `;
+    return fileItem;
+}
 
-            // Reset error messages
-            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' Bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    else return (bytes / 1048576).toFixed(2) + ' MB';
+}
 
-            let hasError = false;
+function downloadFile(fileId) {
+    window.location.href = `/download/${fileId}`;
+}
 
-            if (!fileInput.files[0]) {
-                document.getElementById('selectedFileName').textContent = 'Bitte wählen Sie eine Datei aus.';
-                hasError = true;
-            }
-            if (!username) {
-                document.getElementById('usernameError').textContent = 'Benutzername ist erforderlich.';
-                hasError = true;
-            }
-            if (!email || !validateEmail(email)) {
-                document.getElementById('emailError').textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
-                hasError = true;
-            }
-            if (!secretCode) {
-                document.getElementById('secretCodeError').textContent = 'Geheimcode ist erforderlich.';
-                hasError = true;
-            }
+function deleteFile(fileId) {
+    if (confirm('Sind Sie sicher, dass Sie diese Datei löschen möchten?')) {
+        fetch(`/delete/${fileId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            alert('Datei erfolgreich gelöscht');
+            showUserFiles();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Fehler beim Löschen der Datei');
+        });
+    }
+}
 
-            if (hasError) return;
+function replaceFile(fileId) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.onchange = function(e) {
+        const newFile = e.target.files[0];
+        const formData = new FormData();
+        formData.append('file', newFile);
 
-            const file = fileInput.files[0];
-            if (file.size > 100 * 1024 * 1024) {
-                alert('Die Dateigröße überschreitet 100 MB');
-                return;
-            }
+        fetch(`/replace/${fileId}`, {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Datei erfolgreich ersetzt');
+            showUserFiles();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Fehler beim Ersetzen der Datei');
+        });
+    };
+    fileInput.click();
+}
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const fileContent = e.target.result;
-                const newFile = {
-                    id: Date.now(),
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    username: username,
-                    email: email,
-                    secretCode: secretCode,
-                    content: fileContent
-                };
+window.onload = function() {
+    // No need to load files from localStorage anymore
+};
+        
 
-                files.push(newFile);
-                localStorage.setItem('files', JSON.stringify(files));
-
-                alert('Datei erfolgreich hochgeladen');
-                clearInputs();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function clearInputs() {
-            document.getElementById('fileInput').value = '';
-            document.getElementById('username').value = '';
-            document.getElementById('email').value = '';
-            document.getElementById('secretCode').value = '';
-            document.getElementById('selectedFileName').textContent = '';
-        }
-
-        function showUserFiles() {
-            const username = document.getElementById('manageUsername').value;
-            const secretCode = document.getElementById('manageSecretCode').value;
-            const userFileList = document.getElementById('userFileList');
-            userFileList.innerHTML = '';
-
-            const userFiles = files.filter(file => file.username === username && file.secretCode === secretCode);
-
-            if (userFiles.length === 0) {
-                userFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
-                return;
-            }
-
-            userFiles.forEach(file => {
-                const fileItem = createFileItem(file, true);
-                userFileList.appendChild(fileItem);
-            });
-        }
-
-        function showAdminFiles() {
-            const adminCode = document.getElementById('adminCode').value;
-            if (adminCode !== 'admin123') {
-                alert('Falscher Admin-Code');
-                return;
-            }
-
-            const adminFileList = document.getElementById('adminFileList');
-            adminFileList.innerHTML = '';
-
-            files.forEach(file => {
-                const fileItem = createFileItem(file, false);
-                adminFileList.appendChild(fileItem);
-            });
-
-            if (files.length === 0) {
-                adminFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
-            }
-        }
-
-        function createFileItem(file, isUserView) {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.innerHTML = `
-                <h3>${file.name}</h3>
-                <p><strong>Größe:</strong> ${formatFileSize(file.size)}</p>
-                <p><strong>Typ:</strong> ${file.type}</p>
-                ${isUserView ? '' : `
-                    <p><strong>Benutzername:</strong> ${file.username}</p>
-                    <p><strong>E-Mail:</strong> ${file.email}</p>
-                `}
-                <div class="file-actions">
-                    <button onclick="downloadFile(${file.id})"><i class="fas fa-download"></i> Herunterladen</button>
-                    ${isUserView ? `
-                        <button onclick="deleteFile(${file.id})"><i class="fas fa-trash"></i> Löschen</button>
-                        <button onclick="replaceFile(${file.id})"><i class="fas fa-exchange-alt"></i> Ersetzen</button>
-                    ` : ''}
-                </div>
-            `;
-            return fileItem;
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' Bytes';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-            else return (bytes / 1048576).toFixed(2) + ' MB';
-        }
-
-        function downloadFile(fileId) {
-            const file = files.find(f => f.id === fileId);
-            if (file) {
-                const link = document.createElement('a');
-                link.href = file.content;
-                link.download = file.name;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-
-        function deleteFile(fileId) {
-            const index = files.findIndex(f => f.id === fileId);
-            if (index !== -1) {
-                files.splice(index, 1);
-                localStorage.setItem('files', JSON.stringify(files));
-                showUserFiles();
-                alert('Datei erfolgreich gelöscht');
-            }
-        }
-
-        function replaceFile(fileId) {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.onchange = function(e) {
-                const newFile = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const fileContent = e.target.result;
-                    const index = files.findIndex(f => f.id === fileId);
-                    if (index !== -1) {
-                        files[index].name = newFile.name;
-                        files[index].size = newFile.size;
-                        files[index].type = newFile.type;
-                        files[index].content = fileContent;
-                        localStorage.setItem('files', JSON.stringify(files));
-                        showUserFiles();
-                        alert('Datei erfolgreich ersetzt');
-                    }
-                };
-                reader.readAsDataURL(newFile);
-            };
-            fileInput.click();
-        }
-
-        window.onload = function() {
-            files = JSON.parse(localStorage.getItem('files')) || [];
-        };
+        
    </script>
 </body>
 </html>
