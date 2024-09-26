@@ -12,6 +12,10 @@
         <link rel="icon" type="image/png" href="simoelbCV.png">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+        <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
         <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
         <style>
@@ -1983,216 +1987,267 @@
         });
 
        //<--!Dash-admin-->
-       
-    let files = JSON.parse(localStorage.getItem('files')) || [];
-
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.querySelector(`.tab:nth-child(${tabName === 'upload' ? 1 : tabName === 'manage' ? 2 : 3})`).classList.add('active');
-        document.getElementById(`${tabName}Tab`).classList.add('active');
-    }
-
-    function updateFileName() {
-        const fileInput = document.getElementById('fileInput');
-        const selectedFileName = document.getElementById('selectedFileName');
-        if (fileInput.files.length > 0) {
-            selectedFileName.textContent = `Ausgewählte Datei: ${fileInput.files[0].name}`;
-        } else {
-            selectedFileName.textContent = '';
-        }
-    }
-
-    function validateEmail(email) {
-        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
-    }
-
-    function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        const username = document.getElementById('username').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const secretCode = document.getElementById('secretCode').value.trim();
-
-        // Reset error messages
-        document.querySelectorAll('.error').forEach(el => el.textContent = '');
-
-        let hasError = false;
-
-        if (!fileInput.files[0]) {
-            document.getElementById('selectedFileName').textContent = 'Bitte wählen Sie eine Datei aus.';
-            hasError = true;
-        }
-        if (!username) {
-            document.getElementById('usernameError').textContent = 'Benutzername ist erforderlich.';
-            hasError = true;
-        }
-        if (!email || !validateEmail(email)) {
-            document.getElementById('emailError').textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
-            hasError = true;
-        }
-        if (!secretCode) {
-            document.getElementById('secretCodeError').textContent = 'Geheimcode ist erforderlich.';
-            hasError = true;
-        }
-
-        if (hasError) return;
-
-        const file = fileInput.files[0];
-        if (file.size > 100 * 1024 * 1024) {
-            alert('Die Dateigröße überschreitet 100 MB');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const fileContent = e.target.result;
-            const newFile = {
-                id: Date.now(),
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                username: username,
-                email: email,
-                secretCode: secretCode,
-                content: fileContent
-            };
-
-            files.push(newFile);
-            localStorage.setItem('files', JSON.stringify(files));
-
-            alert('Datei erfolgreich hochgeladen');
-            clearInputs();
+        // تهيئة Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3MI2kZH8bjUsEWxhsl6fs3hEHTKbssFA",
+            authDomain: "educational-plateforme.firebaseapp.com",
+            projectId: "educational-plateforme",
+            storageBucket: "educational-plateforme.appspot.com",
+            messagingSenderId: "424337063101",
+            appId: "1:424337063101:web:79fb3dffb864d9a3198bd4",
+            measurementId: "G-MHLPD0E6HH"
         };
-        reader.readAsDataURL(file);
 
-    }
+        firebase.initializeApp(firebaseConfig);
+        const storage = firebase.storage();
+        const database = firebase.database();
 
-    function clearInputs() {
-        document.getElementById('fileInput').value = '';
-        document.getElementById('username').value = '';
-        document.getElementById('email').value = '';
-        document.getElementById('secretCode').value = '';
-        document.getElementById('selectedFileName').textContent = '';
-    }
-
-    //Show-files-users
-    function showUserFiles() {
-        const username = document.getElementById('manageUsername').value;
-        const secretCode = document.getElementById('manageSecretCode').value;
-        const userFileList = document.getElementById('userFileList');
-        userFileList.innerHTML = '';
-    
-        const userFiles = files.filter(file => file.username === username && file.secretCode === secretCode);
-    
-        if (userFiles.length === 0) {
-            userFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
-            return;
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tabName === 'upload' ? 1 : tabName === 'manage' ? 2 : 3})`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
         }
-    
-        userFiles.forEach(file => {
-            const fileItem = createFileItem(file, true);
-            userFileList.appendChild(fileItem);
-        });
-    }
 
-//Show-files-by-Admin
-    function showAdminFiles() {
-        const adminCode = document.getElementById('adminCode').value;
-        if (adminCode !== 'admin123') {
-            alert('Falscher Admin-Code');
-            return;
+        function updateFileName() {
+            const fileInput = document.getElementById('fileInput');
+            const selectedFileName = document.getElementById('selectedFileName');
+            if (fileInput.files.length > 0) {
+                selectedFileName.textContent = `Ausgewählte Datei: ${fileInput.files[0].name}`;
+            } else {
+                selectedFileName.textContent = '';
+            }
         }
-    
-        const adminFileList = document.getElementById('adminFileList');
-        adminFileList.innerHTML = '';
-    
-        files.forEach(file => {
-            const fileItem = createFileItem(file, false);
-            adminFileList.appendChild(fileItem);
-        });
-    
-        if (files.length === 0) {
-            adminFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
+
+        function validateEmail(email) {
+            const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
         }
-    }
-    function createFileItem(file, isUserView) {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <h3>${file.name}</h3>
-            <p><strong>Größe:</strong> ${formatFileSize(file.size)}</p>
-            <p><strong>Typ:</strong> ${file.type}</p>
-            ${isUserView ? '' : `
-                <p><strong>Benutzername:</strong> ${file.username}</p>
-                <p><strong>E-Mail:</strong> ${file.email}</p>
-            `}
-            <div class="file-actions">
-                <button onclick="downloadFile(${file.id})"><i class="fas fa-download"></i> Herunterladen</button>
-                ${isUserView ? `
-                    <button onclick="deleteFile(${file.id})"><i class="fas fa-trash"></i> Löschen</button>
-                    <button onclick="replaceFile(${file.id})"><i class="fas fa-exchange-alt"></i> Ersetzen</button>
-                ` : ''}
-            </div>
-        `;
-        return fileItem;
-    }
 
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' Bytes';
-        else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-        else return (bytes / 1048576).toFixed(2) + ' MB';
-    }
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const secretCode = document.getElementById('secretCode').value.trim();
 
-    function downloadFile(fileId) {
-        const file = files.find(f => f.id === fileId);
-        if (file) {
+            // إعادة تعيين رسائل الخطأ
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+
+            let hasError = false;
+
+            if (!fileInput.files[0]) {
+                document.getElementById('selectedFileName').textContent = 'Bitte wählen Sie eine Datei aus.';
+                hasError = true;
+            }
+            if (!username) {
+                document.getElementById('usernameError').textContent = 'Benutzername ist erforderlich.';
+                hasError = true;
+            }
+            if (!email || !validateEmail(email)) {
+                document.getElementById('emailError').textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+                hasError = true;
+            }
+            if (!secretCode) {
+                document.getElementById('secretCodeError').textContent = 'Geheimcode ist erforderlich.';
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            const file = fileInput.files[0];
+            if (file.size > 100 * 1024 * 1024) {
+                alert('Die Dateigröße überschreitet 100 MB');
+                return;
+            }
+
+            const fileId = Date.now();
+            const storageRef = storage.ref(`files/${username}/${fileId}_${file.name}`);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // يمكنك إضافة شريط تقدم هنا إذا أردت
+                }, 
+                (error) => {
+                    console.error("Error uploading file: ", error);
+                    alert('Fehler beim Hochladen der Datei');
+                }, 
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        const fileData = {
+                            id: fileId,
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            username: username,
+                            email: email,
+                            secretCode: secretCode,
+                            downloadURL: downloadURL
+                        };
+
+                        database.ref('files').push(fileData);
+                        alert('Datei erfolgreich hochgeladen');
+                        clearInputs();
+                    });
+                }
+            );
+        }
+
+        function clearInputs() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('secretCode').value = '';
+            document.getElementById('selectedFileName').textContent = '';
+        }
+
+        function showUserFiles() {
+            const username = document.getElementById('manageUsername').value;
+            const secretCode = document.getElementById('manageSecretCode').value;
+            const userFileList = document.getElementById('userFileList');
+            userFileList.innerHTML = '';
+
+            database.ref('files').orderByChild('username').equalTo(username).once('value', (snapshot) => {
+                const files = [];
+                snapshot.forEach((childSnapshot) => {
+                    const file = childSnapshot.val();
+                    if (file.secretCode === secretCode) {
+                        files.push(file);
+                    }
+                });
+
+                if (files.length === 0) {
+                    userFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const fileItem = createFileItem(file, true);
+                    userFileList.appendChild(fileItem);
+                });
+            });
+        }
+
+        function showAdminFiles() {
+            const adminCode = document.getElementById('adminCode').value;
+            if (adminCode !== 'admin123') {
+                alert('Falscher Admin-Code');
+                return;
+            }
+
+            const adminFileList = document.getElementById('adminFileList');
+            adminFileList.innerHTML = '';
+
+            database.ref('files').once('value', (snapshot) => {
+                const files = [];
+                snapshot.forEach((childSnapshot) => {
+                    files.push(childSnapshot.val());
+                });
+
+                if (files.length === 0) {
+                    adminFileList.innerHTML = '<p>Keine Dateien gefunden.</p>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const fileItem = createFileItem(file, false);
+                    adminFileList.appendChild(fileItem);
+                });
+            });
+        }
+
+        function createFileItem(file, isUserView) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <h3>${file.name}</h3>
+                <p><strong>Größe:</strong> ${formatFileSize(file.size)}</p>
+                <p><strong>Typ:</strong> ${file.type}</p>
+                ${isUserView ? '' : `
+                    <p><strong>Benutzername:</strong> ${file.username}</p>
+                    <p><strong>E-Mail:</strong> ${file.email}</p>
+                `}
+                <div class="file-actions">
+                    <button onclick="downloadFile('${file.downloadURL}', '${file.name}')"><i class="fas fa-download"></i> Herunterladen</button>
+                    ${isUserView ? `
+                        <button onclick="deleteFile('${file.id}', '${file.username}')"><i class="fas fa-trash"></i> Löschen</button>
+                        <button onclick="replaceFile('${file.id}', '${file.username}')"><i class="fas fa-exchange-alt"></i> Ersetzen</button>
+                    ` : ''}
+                </div>
+            `;
+            return fileItem;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' Bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+
+        function downloadFile(downloadURL, fileName) {
             const link = document.createElement('a');
-            link.href = file.content;
-            link.download = file.name;
+            link.href = downloadURL;
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
-    }
 
-    function deleteFile(fileId) {
-        const index = files.findIndex(f => f.id === fileId);
-        if (index !== -1) {
-            files.splice(index, 1);
-            localStorage.setItem('files', JSON.stringify(files));
-            showUserFiles();
-            alert('Datei erfolgreich gelöscht');
-        }
-    }
+        function deleteFile(fileId, username) {
+            if (confirm('Sind Sie sicher, dass Sie diese Datei löschen möchten?')) {
+                database.ref('files').orderByChild('id').equalTo(parseInt(fileId)).once('value', (snapshot) => {
+                    snapshot.forEach((childSnapshot) => {
+                        childSnapshot.ref.remove();
+                    });
+                });
 
-    function replaceFile(fileId) {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.onchange = function(e) {
-            const newFile = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const fileContent = e.target.result;
-                const index = files.findIndex(f => f.id === fileId);
-                if (index !== -1) {
-                    files[index].name = newFile.name;
-                    files[index].size = newFile.size;
-                    files[index].type = newFile.type;
-                    files[index].content = fileContent;
-                    localStorage.setItem('files', JSON.stringify(files));
+                storage.ref(`files/${username}/${fileId}_${name}`).delete().then(() => {
+                    alert('Datei erfolgreich gelöscht');
                     showUserFiles();
-                    alert('Datei erfolgreich ersetzt');
-                }
-            };
-            reader.readAsDataURL(newFile);
-        };
-        fileInput.click();
-    }
+                }).catch((error) => {
+                    console.error("Error deleting file: ", error);
+                    alert('Fehler beim Löschen der Datei');
+                });
+            }
+        }
 
-    window.onload = function() {
-        files = JSON.parse(localStorage.getItem('files')) || [];
-    };
+        function replaceFile(fileId, username) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.onchange = function(e) {
+                const newFile = e.target.files[0];
+                const storageRef = storage.ref(`files/${username}/${fileId}_${newFile.name}`);
+                const uploadTask = storageRef.put(newFile);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        // يمكنك إضافة شريط تقدم هنا إذا أردت
+                    }, 
+                    (error) => {
+                        console.error("Error uploading file: ", error);
+                        alert('Fehler beim Hochladen der Datei');
+                    }, 
+                    () => {
+                        uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                            database.ref('files').orderByChild('id').equalTo(parseInt(fileId)).once('value', (snapshot) => {
+                                snapshot.forEach((childSnapshot) => {
+                                    childSnapshot.ref.update({
+                                        name: newFile.name,
+                                        size: newFile.size,
+                                        type: newFile.type,
+                                        downloadURL: downloadURL
+                                    });
+                                });
+                            });
+                            alert('Datei erfolgreich ersetzt');
+                            showUserFiles();
+                        });
+                    }
+                );
+            };
+            fileInput.click();
+        }
+   
    </script>
 </body>
 </html>
